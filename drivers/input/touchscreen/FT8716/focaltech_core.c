@@ -1172,7 +1172,7 @@ static void hardwareinfo_set(void *drv_data)
 
 
 #ifndef WT_COMPILE_FACTORY_VERSION
-static int get_boot_mode(struct i2c_client *client)
+static int __maybe_unused get_boot_mode(struct i2c_client *client)
 {
 	int ret;
 	char *cmdline_tp = NULL;

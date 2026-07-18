@@ -185,7 +185,7 @@
 #ifdef WT_COMPILE_FACTORY_VERSION
 	#define FTS_AUTO_UPGRADE_EN                     0
 #else
-	#define FTS_AUTO_UPGRADE_EN                     1
+	#define FTS_AUTO_UPGRADE_EN                     0
 #endif
 
 /*

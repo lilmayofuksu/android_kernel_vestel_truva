@@ -312,6 +312,8 @@ end:
 	return ret;
 }
 
+int tp_gesture_onoff = 0;
+EXPORT_SYMBOL(tp_gesture_onoff);
 static int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 {
 	int ret = 0;

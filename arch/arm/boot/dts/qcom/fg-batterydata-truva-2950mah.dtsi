@@ -1,0 +1,28 @@
+// Truva battery FG profile: 2950 mAh, batt-id 100 kOhm (0x64), 4.4V max.
+// Verbatim from the stock DTB. Defines a truva-owned battery-data node that the
+// FG + charger get pointed at (via &pmi8940_fg / &pmi8940_charger overrides in
+// msm8917-truva.dts), so the FG matches by batt-id-kohm instead of falling back
+// to 'using OTP defaults'.  #include this at the top of msm8917-truva.dts.
+
+/ {
+	truva_batterydata: qcom,battery-data {
+		qcom,batt-id-range-pct = <0xf>;   /* 15% id tolerance, from stock */
+
+		qcom,batterydata-truva-2950mAh {
+			qcom,chg-rs-to-rslow = <0xae6db>;
+			qcom,fg-cc-cv-threshold-mv = <0x1126>;
+			qcom,checksum = <0xc8ce>;
+			qcom,max-voltage-uv = <0x432380>;
+			qcom,gui-version = "PMI8950GUI - 2.0.0.16";
+			qcom,batt-id-kohm = <0x64>;
+			qcom,fg-cutoff-voltage = <0xdac>;
+			qcom,chg-rslow-comp-c1 = <0x2e972b>;
+			qcom,chg-rslow-comp-c2 = <0x44147e>;
+			qcom,nom-batt-capacity-mah = <0xb86>;
+			qcom,chg-rslow-comp-thr = <0xa8>;
+			qcom,fg-profile-data = <0x5881c7e 0xeb81467c 0x3f837972 0x817eb77b 0x282a09b 0x72bff4d0 0x8210f983 0x687d8881 0x117c3483 0xc979fb87 0x6d882582 0x9c9b2bc4 0x52d26a0e 0xa60b6b5b 0x147071fd 0x6e37c044 0xa1300000 0xd04ce541 0x5f300000 0x0 0x0 0x826abf69 0x6a69cf8b 0xa575fe69 0x587cd478 0xc674aa68 0x4c84dd9a 0x18985a20 0x5ca0710c 0x2800ff36 0xf0113003 0xc>;
+			qcom,battery-beta = <0xd6b>;
+			qcom,battery-type = "batterydata-truva-2950mAh";
+		};
+	};
+};

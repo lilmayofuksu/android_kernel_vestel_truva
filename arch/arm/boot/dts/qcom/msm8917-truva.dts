@@ -1,0 +1,108 @@
+/* Vestel Venus E4 (codename "Truva") — MSM8917 / PMI8940
+ *
+ * Drop into: arch/arm/boot/dts/qcom/  of the rolex 3.18 kernel tree
+ *   (github.com/Nick89786/android_kernel_xiaomi_msm8917 @ eb710708)
+ *   The arm64 dts dir is a symlink to this arm dir, so this is the only place.
+ *
+ * Then add to arch/arm/boot/dts/qcom/Makefile:
+ *   dtb-$(CONFIG_ARCH_MSM8917) += msm8917-truva.dtb
+ *
+ * With CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y and empty _NAMES (already the
+ * case in rolex's config), this dtb is appended to Image.gz-dtb and LK selects
+ * it at boot by our unique qcom,board-id below.
+ *
+ * Header/includes mirror the in-tree msm8917-pmi8940-mtp.dts verbatim; all three
+ * tree labels below (&i2c_3, &ts_* pinctrl, &mdss_dsi0/pref-prim-pan) are CONFIRMED
+ * against this tree. Should compile as-is.
+ */
+
+/dts-v1/;
+
+#include "msm8917.dtsi"                /* SoC base: clocks, regulators, iommu, tlmm, i2c, mdss */
+#include "msm8917-pmi8940-mtp.dtsi"    /* board base — same include the stock pmi8940-mtp.dts uses */
+#include "dsi-panel-tchd5553-720p-video.dtsi"   /* our panel node (label: dsi_tchd5553_720p_video_truva) */
+#include "fg-batterydata-truva-2950mah.dtsi"     /* Truva 2950mAh FG profile (label: truva_batterydata) */
+
+/ {
+	model = "Vestel Venus E4 (Truva)";
+	compatible = "qcom,msm8917-mtp", "qcom,msm8917", "qcom,mtp";
+
+	/* Unique selector — this is how LK picks THIS dtb out of the appended set.
+	 * Value taken verbatim from the stock Truva DTB. Siblings use <1 0>/<8 0>/<21 0>
+	 * (and rolex <0x1000b ..>), so no collision. */
+	qcom,board-id = <0x450008 0xe0>;
+	qcom,pmic-id  = <0x10019 0x020040 0x0 0x0>;   /* PMI8940 — matches stock + base board */
+	/* qcom,msm-id inherited from msm8917.dtsi (0x12f = 303 = MSM8917). Stock also
+	 * lists 0x134/0x135 (speed bins 308/309); LK matches on 303, so inheriting is fine.
+	 * If LK refuses to select, re-add the full list here:
+	 * qcom,msm-id = <0x12f 0x0 0x134 0x0 0x135 0x0>; */
+};
+
+/* --- Display: make tchd5553 the primary panel on DSI0 --------------------- */
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&dsi_tchd5553_720p_video_truva>;
+};
+
+/* --- Touch: FocalTech FT8716 on the i2c bus at 0x78b7000 -------------------
+ * Source-form rewrite of the stock focaltech@38 node (see focaltech-ft8716-node.dtsi
+ * for the raw verbatim reference with the original numeric phandles).
+ *   tlmm GPIO 64 (0x40) = reset,  GPIO 65 (0x41) = irq (falling/level per stock).
+ * >>> Replace &i2c_3 with the real label for reg 0x78b7000 (confirm in msm8917.dtsi).
+ * >>> Replace the pinctrl-N phandles with the tree's touch pinmux state labels. */
+&i2c_3 {
+	status = "okay";   /* MTP base leaves i2c_3 disabled; stock Truva enables it here */
+
+	focaltech@38 {
+		compatible = "focaltech,fts";
+		reg = <0x38>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <65 0x2>;
+		focaltech,reset-gpio = <&tlmm 64 0x1>;
+		focaltech,irq-gpio   = <&tlmm 65 0x2>;
+		focaltech,display-coords = <0 0 720 1440>;
+		focaltech,max-touch-number = <5>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active  &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		status = "okay";
+	};
+};
+
+/* --- Vibrator: Truva uses an ERM; the pmi8940 base configures an LRA --------
+ * Base (msm-pmi8940.dtsi &pmi_haptic): actuator-type="lra", vmax 2000mV, with
+ * LRA auto-resonance -> drives our ERM off-resonance = audible buzz + weak vibe.
+ * Stock Truva: actuator-type="erm", vmax 3300mV, no LRA auto-res. Override to match. */
+&pmi_haptic {
+	qcom,actuator-type = "erm";
+	qcom,vmax-mv = <3300>;            /* stock 0xce4; base was 2000 (LRA) */
+	/delete-property/ qcom,lra-auto-res-mode;
+	/delete-property/ qcom,lra-high-z;
+	/delete-property/ qcom,lra-res-cal-period;
+};
+
+/* --- Battery: point FG + charger at Truva's real 2950mAh profile -----------
+ * Without this the FG finds no matching profile for Truva's battery-id (100 kOhm)
+ * and logs "No available batterydata, using OTP defaults" -> uncalibrated SoC%.
+ * truva_batterydata is defined in fg-batterydata-truva-2950mah.dtsi (included above). */
+&pmi8940_fg {
+	qcom,battery-data = <&truva_batterydata>;
+};
+
+&pmi8940_charger {
+	qcom,battery-data = <&truva_batterydata>;
+
+	/* The base pmi8940 charger has all six register sub-blocks but is MISSING the
+	 * charge-current/voltage tuning -> charger detects USB but never charges
+	 * (verified on-device: usb_online=1 yet status=Discharging, charge_type=N/A).
+	 * Add Truva's stock charge params. fastchg-current-ma is the critical one. */
+	qcom,fastchg-current-ma = <1200>;          /* 0x4b0 - absent in base */
+	qcom,override-usb-current;                 /* absent in base */
+	qcom,float-voltage-mv = <4400>;            /* stock 0x1130; base was 4200 */
+	qcom,fastchg-current-comp = <1200>;        /* 0x4b0 */
+	qcom,cool-fastchg-current-comp = <250>;    /* 0xfa */
+	qcom,float-voltage-comp = <15>;            /* 0xf */
+	qcom,cool-float-voltage-comp = <0>;
+	qcom,chg-inhibit-en = <1>;
+	qcom,jeita-temp-hard-limit = <1>;
+};
