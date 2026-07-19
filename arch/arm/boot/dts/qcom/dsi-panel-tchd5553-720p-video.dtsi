@@ -54,7 +54,6 @@ dsi_tchd5553_720p_video_truva: qcom,mdss_dsi_tchd5553_720p_video_truva {
 	qcom,mdss-dsi-v-pulse-width = <0x4>;
 	qcom,mdss-dsi-h-back-porch = <0x50>;
 	qcom,mdss-dsi-v-back-porch = <0x10>;
-	qcom,cont-splash-enabled;
 	qcom,mdss-dsi-v-top-border = <0x0>;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;	/* was phandle 0xb6; tree's standard vdd/vddio/lab/ibb supply (identical rails) */
 	qcom,mdss-dsi-bllp-power-mode;
