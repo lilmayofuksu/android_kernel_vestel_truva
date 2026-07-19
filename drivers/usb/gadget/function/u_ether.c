@@ -28,7 +28,7 @@
 #include <linux/notifier.h>
 #include <linux/cpufreq.h>
 #include "u_ether.h"
-
+#include "rndis.h"
 
 /*
  * This component encapsulates the Ethernet link glue needed to provide
